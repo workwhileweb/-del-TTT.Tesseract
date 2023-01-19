@@ -9,19 +9,10 @@ namespace TTT.Tesseract;
 /// <param name="Rectangle"></param>
 public record TextBox(string Text, Rectangle Rectangle)
 {
-    public const string DefaultDelimiter = " ";
-    public const string DoubleDelimiter = DefaultDelimiter + DefaultDelimiter;
+    
 
     private string? _stripedText;
-    public string StripedText => _stripedText ??= GetStripedText(Text);
-
-    public static string GetStripedText(string input)
-    {
-        var filtered = input.Where(x => char.IsWhiteSpace(x) || char.IsLetterOrDigit(x)).ToArray();
-        var result = new string(filtered);
-        while (result.Contains(DoubleDelimiter)) result = result.Replace(DoubleDelimiter, DefaultDelimiter);
-        return result;
-    }
+    public string StripedText => _stripedText ??= Helper.GetStripedText(Text);
 
     public bool Match(string find, bool ignoreCase = false, bool contains = true, bool strip = true)
     {

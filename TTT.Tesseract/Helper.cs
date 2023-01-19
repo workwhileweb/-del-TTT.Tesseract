@@ -9,6 +9,9 @@ namespace TTT.Tesseract;
 
 public static class Helper
 {
+    public const string DefaultDelimiter = " ";
+    public const string DoubleDelimiter = DefaultDelimiter + DefaultDelimiter;
+
     // ReSharper disable once UnusedMember.Local
     public static readonly Destructor StaticDestructor = new();
 
@@ -40,6 +43,14 @@ public static class Helper
         EngEngine = new TesseractEngine(TessDataFolder, "eng", EngineMode.Default);
 
         AppDomain.CurrentDomain.ProcessExit += (_, _) => EngEngine.Dispose();
+    }
+
+    public static string GetStripedText(string input)
+    {
+        var filtered = input.Where(x => char.IsWhiteSpace(x) || char.IsLetterOrDigit(x)).ToArray();
+        var result = new string(filtered);
+        while (result.Contains(DoubleDelimiter)) result = result.Replace(DoubleDelimiter, DefaultDelimiter);
+        return result;
     }
 
     public static Page Parse(string path)
