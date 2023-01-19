@@ -4,7 +4,10 @@ namespace TTT.Tesseract;
 
 public record TextBoxes<T> : TextBox where T : TextBox
 {
-    public TextBoxes(IReadOnlyList<T> boxes, Rectangle rectangle, string delimiter = Helper.DefaultDelimiter)
+    public TextBoxes(
+        IReadOnlyList<T> boxes,
+        Rectangle rectangle, 
+        string delimiter = Helper.Space)
         : base(string.Join(delimiter, boxes.Select(box => box.Text)), rectangle)
     {
         Boxes = boxes;

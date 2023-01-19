@@ -9,8 +9,8 @@ namespace TTT.Tesseract;
 
 public static class Helper
 {
-    public const string DefaultDelimiter = " ";
-    public const string DoubleDelimiter = DefaultDelimiter + DefaultDelimiter;
+    public const string Space = " ";
+    public const string DoubleSpace = Space + Space;
 
     // ReSharper disable once UnusedMember.Local
     public static readonly Destructor StaticDestructor = new();
@@ -45,15 +45,22 @@ public static class Helper
         AppDomain.CurrentDomain.ProcessExit += (_, _) => EngEngine.Dispose();
     }
 
-    public static string GetStripedText(string input)
+    public static string Striped(this string input)
     {
-        var filtered = input.Where(x => char.IsWhiteSpace(x) || char.IsLetterOrDigit(x)).ToArray();
+        return new string(input.Where(char.IsLetterOrDigit).ToArray());
+        /*var filtered = input.Where(x => char.IsWhiteSpace(x) || char.IsLetterOrDigit(x)).ToArray();
         var result = new string(filtered);
-        while (result.Contains(DoubleDelimiter)) result = result.Replace(DoubleDelimiter, DefaultDelimiter);
-        return result;
+        while (result.Contains(DoubleSpace)) result = result.Replace(DoubleSpace, Space);
+        return result;*/
     }
 
-    public static Page Parse(string path)
+    public static Page Parse(this Bitmap bitmap)
+    {
+        using var pix = PixConverter.ToPix(bitmap);
+        return Parse(pix);
+    }
+
+    public static Page Parse(this string path)
     {
         using var img = Pix.LoadFromFile(path);
         return Parse(img);
@@ -64,7 +71,7 @@ public static class Helper
         return new Rectangle(rect.X1, rect.Y1, rect.Width, rect.Height);
     }
 
-    public static Page Parse(Pix img)
+    public static Page Parse(this Pix img)
     {
         using var page = EngEngine.Process(img);
         using var iterator = page.GetIterator();
@@ -108,20 +115,20 @@ public static class Helper
         return new Page(blocks);
     }
 
-    public static IEnumerable<Rectangle>? FindText(string text, Page page, 
+    public static IEnumerable<Rectangle>? FindText(this Page page, string text,
         bool ignoreCase = true, bool contains = true, bool strip = true)
     {
-        var results = FindWord(text, page, ignoreCase, contains, strip).ToList();
+        var results = FindWord(page, text, ignoreCase, contains, strip).ToList();
         if (results.Count > 0) return results;
-        results = FindLine(text, page, ignoreCase, contains, strip).ToList();
+        results = FindLine(page, text, ignoreCase, contains, strip).ToList();
         if (results.Count > 0) return results;
-        results = FindParagraph(text, page, ignoreCase, contains, strip).ToList();
+        results = FindParagraph(page, text, ignoreCase, contains, strip).ToList();
         if (results.Count > 0) return results;
-        results = FindBlock(text, page, ignoreCase, contains, strip).ToList();
+        results = FindBlock(page, text, ignoreCase, contains, strip).ToList();
         return results.Count > 0 ? results : null;
     }
 
-    public static IEnumerable<Rectangle> FindBlock(string text, Page page, 
+    public static IEnumerable<Rectangle> FindBlock(this Page page, string text,
         bool ignoreCase = true, bool contains = true, bool strip = true)
     {
         return
@@ -130,7 +137,7 @@ public static class Helper
             select block.Rectangle;
     }
 
-    public static IEnumerable<Rectangle> FindParagraph(string text, Page page, 
+    public static IEnumerable<Rectangle> FindParagraph(this Page page, string text,
         bool ignoreCase = true, bool contains = true, bool strip = true)
     {
         return
@@ -140,7 +147,7 @@ public static class Helper
             select paragraph.Rectangle;
     }
 
-    public static IEnumerable<Rectangle> FindLine(string text, Page page, 
+    public static IEnumerable<Rectangle> FindLine(this Page page, string text,
         bool ignoreCase = true, bool contains = true, bool strip = true)
     {
         return
@@ -151,7 +158,7 @@ public static class Helper
             select line.Rectangle;
     }
 
-    public static IEnumerable<Rectangle> FindWord(string text, Page page, 
+    public static IEnumerable<Rectangle> FindWord(this Page page, string text,
         bool ignoreCase = true, bool contains = true, bool strip = true)
     {
         return
