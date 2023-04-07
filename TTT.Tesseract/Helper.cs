@@ -45,6 +45,36 @@ public static class Helper
         AppDomain.CurrentDomain.ProcessExit += (_, _) => EngEngine.Dispose();
     }
 
+    public static async Task<TesseractEngine> CreateEngine(Languages language)
+    {
+        await DownloadTrainedData(language);
+        return new TesseractEngine(TessDataFolder, language.ToString().ToLower(), EngineMode.Default);
+    }
+
+    public static async Task DownloadTrainedData(Languages language)
+    {
+        const string url = "https://github.com/tesseract-ocr/tessdata/raw/main/";
+        var fileName = $"{language.ToString().ToLower()}.traineddata";
+        await DownloadFile($"{url}{fileName}", TessDataFolder, fileName);
+    }
+
+    private static async Task DownloadFile(string url, string folder, string fileName, bool overwrite=false)
+    {
+        var content = await GetUrlContent(url);
+        if (content == null) return;
+        if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+        var file = Path.Combine(folder, fileName);
+        if(File.Exists(file) && !overwrite) return;
+        await File.WriteAllBytesAsync(file, content);
+    }
+    
+    private static async Task<byte[]?> GetUrlContent(string url)
+    {
+        using var client = new HttpClient();
+        using var result = await client.GetAsync(url);
+        return result.IsSuccessStatusCode ? await result.Content.ReadAsByteArrayAsync() : null;
+    }
+
     public static string Striped(this string input)
     {
         return new string(input.Where(char.IsLetterOrDigit).ToArray());
@@ -56,14 +86,24 @@ public static class Helper
 
     public static Page Parse(this Bitmap bitmap)
     {
+        return Parse(bitmap, EngEngine);
+    }
+
+    public static Page Parse(this Bitmap bitmap, TesseractEngine engine)
+    {
         using var pix = PixConverter.ToPix(bitmap);
-        return Parse(pix);
+        return Parse(pix, engine);
     }
 
     public static Page Parse(this string path)
     {
+        return Parse(path, EngEngine);
+    }
+
+    public static Page Parse(this string path, TesseractEngine engine)
+    {
         using var img = Pix.LoadFromFile(path);
-        return Parse(img);
+        return Parse(img, engine);
     }
 
     private static Rectangle ToRectangle(this Rect rect)
@@ -71,9 +111,9 @@ public static class Helper
         return new Rectangle(rect.X1, rect.Y1, rect.Width, rect.Height);
     }
 
-    public static Page Parse(this Pix img)
+    public static Page Parse(this Pix img, TesseractEngine engine)
     {
-        using var page = EngEngine.Process(img);
+        using var page = engine.Process(img);
         using var iterator = page.GetIterator();
         iterator.Begin();
 
